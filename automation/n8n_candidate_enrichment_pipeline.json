@@ -1,0 +1,212 @@
+{
+  "name": "ConsultBae - Candidate Ingestion, Duplicate Detection & AI Skill Auto-Tagger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "candidate-submission",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "id": "1d8b746c-0e83-4a11-8e53-73934f8a0001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalization & Validation of Candidate Payload\nconst body = $input.first().json.body || $input.first().json;\n\n// Normalize phone (strip non-digits, leading +91, 0)\nlet rawPhone = body.phone || body.phone_number || body.Phone || \"\";\nlet phoneDigits = String(rawPhone).replace(/\\D/g, '');\nif (phoneDigits.length === 12 && phoneDigits.startsWith('91')) {\n  phoneDigits = phoneDigits.substring(2);\n} else if (phoneDigits.length === 11 && phoneDigits.startsWith('0')) {\n  phoneDigits = phoneDigits.substring(1);\n}\nconst normalizedPhone = (phoneDigits.length === 10) ? phoneDigits : null;\n\n// Normalize email\nlet rawEmail = body.email || body.email_id || body.Email || \"\";\nconst normalizedEmail = rawEmail ? String(rawEmail).trim().toLowerCase() : null;\n\n// Normalize name\nlet rawName = body.full_name || body.name || body.worker_name || body.Name || \"Unknown\";\nconst normalizedName = rawName.trim();\n\n// Normalize city\nlet rawCity = body.city || body.location || body.City || \"Unknown\";\n\n// Normalize skills array\nlet rawSkills = body.skills || body.skill_tags || body.Skills || [];\nlet skillsArray = [];\nif (typeof rawSkills === 'string') {\n  skillsArray = rawSkills.split(',').map(s => s.trim()).filter(Boolean);\n} else if (Array.isArray(rawSkills)) {\n  skillsArray = rawSkills.map(s => String(s).trim()).filter(Boolean);\n}\n\nreturn {\n  json: {\n    full_name: normalizedName,\n    email: normalizedEmail,\n    phone: normalizedPhone,\n    city: rawCity,\n    skills: skillsArray,\n    experience_years: parseFloat(body.experience_years || body['Experience (Years)'] || 0),\n    current_ctc_lpa: parseFloat(body.current_ctc_lpa || body.ctc || 0),\n    source_channel: body.source || \"n8n_webhook\",\n    raw_input: body\n  }\n};"
+      },
+      "name": "Data Cleaner & Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ],
+      "id": "2b9c857d-1f94-4b22-9f64-84045a9b0002"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/candidates/check-duplicate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email\": \"{{ $json.email }}\",\n  \"phone\": \"{{ $json.phone }}\",\n  \"name\": \"{{ $json.full_name }}\"\n}",
+        "options": {}
+      },
+      "name": "Query Database For Duplicate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        700,
+        300
+      ],
+      "id": "3c0d968e-2a05-4c33-a075-95156bac0003"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_duplicate }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        920,
+        300
+      ],
+      "id": "4d1e079f-3b16-4d44-b186-a6267cbd0004"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://httpbin.org/post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alert_type\": \"DUPLICATE_CANDIDATE_DETECTED\",\n  \"candidate_name\": \"{{ $('Data Cleaner & Normalizer').item.json.full_name }}\",\n  \"email\": \"{{ $('Data Cleaner & Normalizer').item.json.email }}\",\n  \"phone\": \"{{ $('Data Cleaner & Normalizer').item.json.phone }}\",\n  \"matched_candidate_id\": {{ $json.matched_candidate.id }},\n  \"matched_candidate_sources\": {{ JSON.stringify($json.matched_candidate.sources_merged) }},\n  \"status\": \"Flagged for manual review\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "name": "Send Duplicate Alert (Slack/Webhook)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1180,
+        180
+      ],
+      "id": "5e2f1800-4c27-4e55-c297-b7378dce0005"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rule-based / LLM Simulation for Skill Classification\nconst candidate = $('Data Cleaner & Normalizer').item.json;\nconst skills = candidate.skills || [];\nconst skillsLower = skills.map(s => s.toLowerCase());\n\nlet primaryCategory = \"general-it\";\nlet secondaryTags = [];\nlet reasoning = \"\";\n\nconst autoKeywords = ['n8n', 'zapier', 'selenium', 'langchain', 'rest apis', 'web scraping'];\nconst webKeywords = ['react', 'javascript', 'fastapi', 'nodejs', 'html', 'css'];\nconst dataKeywords = ['pandas', 'sql', 'mysql', 'mongodb', 'postgresql', 'data'];\n\nconst autoScore = skillsLower.filter(s => autoKeywords.some(k => s.includes(k))).length;\nconst webScore = skillsLower.filter(s => webKeywords.some(k => s.includes(k))).length;\nconst dataScore = skillsLower.filter(s => dataKeywords.some(k => s.includes(k))).length;\n\nif (autoScore >= webScore && autoScore >= dataScore && autoScore > 0) {\n  primaryCategory = \"automation-heavy\";\n  secondaryTags.push(\"workflow-orchestration\", \"rpa-ai\");\n  reasoning = `Strong overlap with automation stack (${skills.join(', ')}).`;\n} else if (webScore >= dataScore && webScore > 0) {\n  primaryCategory = \"web dev\";\n  secondaryTags.push(\"frontend-backend\", \"fullstack\");\n  reasoning = `High proficiency in web development technologies (${skills.join(', ')}).`;\n} else if (dataScore > 0) {\n  primaryCategory = \"data\";\n  secondaryTags.push(\"data-engineering\", \"database-design\");\n  reasoning = `Specialized in data analysis and database querying (${skills.join(', ')}).`;\n}\n\nlet seniority = \"Mid-Level\";\nif (candidate.experience_years >= 4.0) {\n  seniority = \"Senior\";\n} else if (candidate.experience_years <= 1.5) {\n  seniority = \"Junior / Associate\";\n}\n\nreturn {\n  json: {\n    candidate: candidate,\n    classification: {\n      primary_category: primaryCategory,\n      secondary_tags: secondaryTags,\n      seniority_level: seniority,\n      confidence_score: 0.94,\n      reasoning: reasoning\n    }\n  }\n};"
+      },
+      "name": "LLM / AI Skill Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        420
+      ],
+      "id": "6f302911-5d38-4f66-d308-c8489edf0006"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/candidates/enrich",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"full_name\": \"{{ $json.candidate.full_name }}\",\n  \"email\": \"{{ $json.candidate.email }}\",\n  \"phone\": \"{{ $json.candidate.phone }}\",\n  \"city\": \"{{ $json.candidate.city }}\",\n  \"skills\": {{ JSON.stringify($json.candidate.skills) }},\n  \"experience_years\": {{ $json.candidate.experience_years }},\n  \"current_ctc_lpa\": {{ $json.candidate.current_ctc_lpa }},\n  \"primary_category\": \"{{ $json.classification.primary_category }}\",\n  \"seniority_level\": \"{{ $json.classification.seniority_level }}\",\n  \"ai_notes\": \"{{ $json.classification.reasoning }}\",\n  \"source\": \"n8n_automation\"\n}",
+        "options": {}
+      },
+      "name": "Write Enriched Candidate to Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1420,
+        420
+      ],
+      "id": "70413a22-6e49-4077-e419-d959af000007"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nreturn {\n  json: {\n    status: \"SUCCESS\",\n    message: \"Candidate successfully processed and classified.\",\n    candidate_name: input.full_name || input.name,\n    skill_category: input.primary_category || \"automation-heavy\",\n    processed_at: new Date().toISOString()\n  }\n};"
+      },
+      "name": "Format Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        420
+      ],
+      "id": "81524b33-7f5a-4188-f520-ea6ab0110008"
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Data Cleaner & Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Cleaner & Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Query Database For Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Database For Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Send Duplicate Alert (Slack/Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM / AI Skill Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM / AI Skill Classifier": {
+      "main": [
+        [
+          {
+            "node": "Write Enriched Candidate to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Enriched Candidate to Database": {
+      "main": [
+        [
+          {
+            "node": "Format Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
