@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConsultBae — AI Automation & Audio Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>ConsultBae</h1>
+          <span class="badge-role">AI Automation Suite</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="tab-record" id="nav-record-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          Record Audio (Task 3)
+        </button>
+        <button class="nav-tab" data-tab="tab-submissions" id="nav-submissions-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Submissions Explorer <span class="counter-badge" id="submissions-count">0</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-candidates" id="nav-candidates-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Unified Database (Task 1) <span class="counter-badge" id="candidates-count">0</span>
+        </button>
+        <button class="nav-tab" data-tab="tab-automation" id="nav-automation-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          n8n Automation (Task 2)
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ================= TAB 1: AUDIO COLLECTION APP (TASK 3) ================= -->
+      <section id="tab-record" class="tab-panel active">
+        <div class="panel-header">
+          <div>
+            <h2>Gig Worker Audio Collection Portal</h2>
+            <p class="subtitle">Record live audio in your browser or upload an audio file. Signal properties (duration, kHz, bitrate, dBFS, SNR) are extracted instantly.</p>
+          </div>
+          <div class="pipeline-status-badge">
+            <span class="status-dot"></span> System Live & Ready
+          </div>
+        </div>
+
+        <div class="audio-grid">
+          <!-- Submission Form Card -->
+          <div class="card form-card">
+            <div class="card-header">
+              <h3>1. Worker Information</h3>
+              <span class="hint">Required for database identity matching</span>
+            </div>
+
+            <form id="audio-submit-form">
+              <div class="form-group">
+                <label for="worker_name">Full Name <span class="req">*</span></label>
+                <input type="text" id="worker_name" name="worker_name" placeholder="e.g. Tanvi Gupta" required>
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone Number <span class="req">*</span></label>
+                <input type="tel" id="phone" name="phone" placeholder="e.g. 9000000254 or +91 9000000254" required>
+                <span class="field-help">Accepts Indian numbers (+91, 0, or 10 digits)</span>
+              </div>
+
+              <!-- Input Mode Toggle -->
+              <div class="mode-toggle-container">
+                <label>Audio Source:</label>
+                <div class="mode-toggles">
+                  <button type="button" class="mode-btn active" id="btn-mode-mic">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                    Microphone Recorder
+                  </button>
+                  <button type="button" class="mode-btn" id="btn-mode-file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    File Upload
+                  </button>
+                </div>
+              </div>
+
+              <!-- Mode 1: Live Audio Recording Area -->
+              <div id="recording-area" class="recording-container">
+                <div class="visualizer-wrapper">
+                  <canvas id="audio-visualizer" width="500" height="100"></canvas>
+                  <div class="timer-display" id="recording-timer">00:00.0</div>
+                </div>
+
+                <div class="record-controls">
+                  <button type="button" class="btn btn-record" id="btn-start-record">
+                    <span class="rec-dot"></span> Start Recording
+                  </button>
+                  <button type="button" class="btn btn-stop" id="btn-stop-record" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                    Stop Recording
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="btn-reset-record" style="display:none;">
+                    Reset
+                  </button>
+                </div>
+
+                <!-- Preview Player -->
+                <div id="mic-preview-container" class="preview-box" style="display:none;">
+                  <span class="preview-label">Recorded Audio Preview:</span>
+                  <audio id="mic-audio-player" controls></audio>
+                </div>
+              </div>
+
+              <!-- Mode 2: File Upload Area -->
+              <div id="upload-area" class="upload-container" style="display:none;">
+                <div class="drop-zone" id="audio-drop-zone">
+                  <div class="drop-icon">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <p class="drop-text">Drag & drop your audio file here or <span class="browse-link">browse</span></p>
+                  <span class="drop-hint">Supports WAV, MP3, WebM, OGG, M4A</span>
+                  <input type="file" id="audio_file_input" accept="audio/*,.wav,.mp3,.webm,.ogg,.m4a" style="display:none;">
+                </div>
+                <div id="file-info-preview" class="file-preview-pill" style="display:none;">
+                  <span id="selected-file-name">filename.wav</span>
+                  <span id="selected-file-size" class="size-badge">0 KB</span>
+                  <button type="button" id="btn-clear-file" class="btn-icon">&times;</button>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block" id="btn-submit-audio" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  Submit & Extract Audio Signal Properties
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Extraction Results / Info Card -->
+          <div class="card results-card">
+            <div class="card-header">
+              <h3>2. Real-Time Signal Analysis Engine</h3>
+              <span class="badge-tag">Task 3 Core + Bonus</span>
+            </div>
+
+            <div id="results-placeholder" class="placeholder-box">
+              <div class="placeholder-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 10v3"/><path d="M6 6v11"/><path d="M10 3v18"/><path d="M14 8v7"/><path d="M18 5v13"/><path d="M22 10v3"/></svg>
+              </div>
+              <p>Record or upload an audio file and submit to see mathematical signal extraction in real time.</p>
+              <ul class="feature-bullets">
+                <li><strong>Duration:</strong> Exact length in seconds</li>
+                <li><strong>Sample Rate:</strong> Digital sampling frequency in kHz</li>
+                <li><strong>Bitrate:</strong> Encoded stream bandwidth (kbps)</li>
+                <li><strong>Loudness:</strong> RMS energy relative to full scale (dBFS)</li>
+                <li><strong>Noise Floor & SNR:</strong> Voice vs background noise separation (dB)</li>
+                <li><strong>Clipping & Quality:</strong> Saturation ratio & studio rating</li>
+              </ul>
+            </div>
+
+            <div id="results-display" class="results-content" style="display:none;">
+              <div class="verdict-banner" id="res-verdict-banner">
+                <div class="verdict-icon" id="res-verdict-icon">✓</div>
+                <div>
+                  <h4 id="res-verdict-title">Studio Quality / Pristine</h4>
+                  <p id="res-verdict-notes">Clean speech signal with optimal voice loudness.</p>
+                </div>
+              </div>
+
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <span class="metric-label">Duration</span>
+                  <span class="metric-value" id="res-duration">0.0s</span>
+                  <span class="metric-sub">Length</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Sample Rate</span>
+                  <span class="metric-value" id="res-sample-rate">44.1 kHz</span>
+                  <span class="metric-sub">Sampling frequency</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Bitrate</span>
+                  <span class="metric-value" id="res-bitrate">128 kbps</span>
+                  <span class="metric-sub">Audio bandwidth</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Loudness (RMS)</span>
+                  <span class="metric-value" id="res-loudness">-18.5 dBFS</span>
+                  <span class="metric-sub">Full scale level</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">SNR (Noise Est.)</span>
+                  <span class="metric-value highlight" id="res-snr">24.2 dB</span>
+                  <span class="metric-sub">Signal to Noise Ratio</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-label">Clipping Ratio</span>
+                  <span class="metric-value" id="res-clipping">0.00%</span>
+                  <span class="metric-sub">Digital saturation</span>
+                </div>
+              </div>
+
+              <div class="db-link-pill">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span id="res-db-link-text">Linked to Unified Candidate ID #1 (Tanvi Gupta)</span>
+              </div>
+
+              <div class="action-row">
+                <button type="button" class="btn btn-secondary" id="btn-view-in-explorer">
+                  View in Submissions Explorer &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: SUBMISSIONS EXPLORER (TASK 3) ================= -->
+      <section id="tab-submissions" class="tab-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Audio Submissions Explorer</h2>
+            <p class="subtitle">Complete catalog of submitted audio recordings with in-browser playback and extracted audio properties.</p>
+          </div>
+          <div class="filter-group">
+            <input type="text" id="filter-submissions-input" placeholder="Search by name, phone, or quality..." class="search-box">
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="submissions-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Worker Name</th>
+                  <th>Phone Number</th>
+                  <th>Audio Playback</th>
+                  <th>Duration</th>
+                  <th>Sample Rate</th>
+                  <th>Bitrate</th>
+                  <th>Loudness</th>
+                  <th>SNR (dB)</th>
+                  <th>Quality Rating</th>
+                  <th>Submitted At</th>
+                </tr>
+              </thead>
+              <tbody id="submissions-tbody">
+                <!-- Populated via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: UNIFIED DATABASE (TASK 1) ================= -->
+      <section id="tab-candidates" class="tab-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Unified Master Candidate Directory</h2>
+            <p class="subtitle">Task 1: Merged across Naukri Applicants, Gig Workers, and CBNexus Contacts using deterministic entity resolution.</p>
+          </div>
+          <div class="header-actions">
+            <input type="text" id="filter-candidates-input" placeholder="Search candidates, skills, city..." class="search-box">
+            <button type="button" class="btn btn-secondary" id="btn-reingest-db">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Re-run Task 1 Merge
+            </button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="candidates-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Candidate Name</th>
+                  <th>Phone Number</th>
+                  <th>Email</th>
+                  <th>City</th>
+                  <th>Sources Merged</th>
+                  <th>Experience / CTC</th>
+                  <th>Gig Rates</th>
+                  <th>Verified</th>
+                  <th>Skills</th>
+                </tr>
+              </thead>
+              <tbody id="candidates-tbody">
+                <!-- Populated via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: N8N AUTOMATION (TASK 2) ================= -->
+      <section id="tab-automation" class="tab-panel">
+        <div class="panel-header">
+          <div>
+            <h2>n8n Low-Code Automation Workflow (Task 2)</h2>
+            <p class="subtitle">Visual flow diagram, exportable JSON, and live interactive simulation for duplicate detection and LLM skill auto-categorization.</p>
+          </div>
+          <div>
+            <a href="/static/n8n_flow_diagram.svg" target="_blank" class="btn btn-secondary">Open Flow Diagram</a>
+          </div>
+        </div>
+
+        <div class="automation-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Workflow Architecture</h3>
+              <span class="badge-tag">n8n Export: n8n_candidate_enrichment_pipeline.json</span>
+            </div>
+            <div class="workflow-steps-list">
+              <div class="step-item">
+                <div class="step-num">1</div>
+                <div>
+                  <strong>Webhook Trigger</strong>
+                  <p>Listens for incoming candidate payloads (POST /webhook/candidate-submission).</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">2</div>
+                <div>
+                  <strong>Data Cleaner & Normalizer (JS Code Node)</strong>
+                  <p>Standardizes phone (+91/0 -> 10 digits), lowercases email, parses skills array.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">3</div>
+                <div>
+                  <strong>Database Duplicate Query</strong>
+                  <p>Calls ConsultBae SQLite backend API (/api/candidates/check-duplicate).</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">4</div>
+                <div>
+                  <strong>IF Duplicate Router</strong>
+                  <p><strong>Duplicate:</strong> Sends alert payload to Slack/Discord/Webhook.<br><strong>Unique:</strong> Passes payload to LLM Classifier.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">5</div>
+                <div>
+                  <strong>LLM AI Skill Auto-Tagger</strong>
+                  <p>Tags candidate: "automation-heavy", "web dev", "data", seniority & reasoning.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">6</div>
+                <div>
+                  <strong>Database Writeback Node</strong>
+                  <p>Persists enriched profile into SQLite master table.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Test Runner Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Live Interactive Test Console</h3>
+              <span class="hint">Test duplicate alerts & AI categorization</span>
+            </div>
+
+            <form id="n8n-test-form">
+              <div class="form-group">
+                <label>Candidate Name</label>
+                <input type="text" id="n8n-test-name" value="Tanvi Gupta">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" id="n8n-test-email" value="tanvi.gupta31@example.com">
+                </div>
+                <div class="form-group">
+                  <label>Phone</label>
+                  <input type="tel" id="n8n-test-phone" value="+919000000254">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Skills</label>
+                <input type="text" id="n8n-test-skills" value="n8n, Python, LangChain, FastAPI, Docker">
+              </div>
+
+              <div class="btn-group">
+                <button type="button" class="btn btn-secondary" id="btn-load-dup-sample">Load Existing Profile (Duplicate Test)</button>
+                <button type="button" class="btn btn-secondary" id="btn-load-new-sample">Load New Profile (Unique Test)</button>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" style="margin-top:1rem;">
+                Run n8n Pipeline Simulation
+              </button>
+            </form>
+
+            <div id="n8n-output-box" class="code-output-box" style="display:none; margin-top:1rem;">
+              <pre><code id="n8n-output-json">// Result will appear here</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div>ConsultBae AI Automation Platform &bull; Built with FastAPI, SQLite, Vanilla CSS & Web Audio API</div>
+      <div>Designed for Gig Worker Audio Collection & Unified Candidate Ingestion</div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

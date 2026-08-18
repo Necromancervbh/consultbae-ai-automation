@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="gradBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="gradNode1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ec4899" />
+      <stop offset="100%" stop-color="#be185d" />
+    </linearGradient>
+    <linearGradient id="gradNode2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="gradNode3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#0e7490" />
+    </linearGradient>
+    <linearGradient id="gradNode4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="gradNode5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="gradNode6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" />
+      <stop offset="100%" stop-color="#6d28d9" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1100" height="480" fill="url(#gradBg)" rx="16" />
+  <rect x="1" y="1" width="1098" height="478" fill="none" stroke="rgba(255,255,255,0.08)" rx="16" stroke-width="2" />
+
+  <!-- Title -->
+  <text x="50" y="50" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="700" fill="#f9fafb">ConsultBae — n8n Candidate Enrichment &amp; Duplicate Automation Pipeline</text>
+  <text x="50" y="75" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" fill="#9ca3af">Visual execution graph for Task 2: Webhook Trigger → Validation → DB Deduplication → LLM Classification → Writeback</text>
+
+  <!-- Connecting Arrows -->
+  <!-- 1 -> 2 -->
+  <path d="M 190 220 L 260 220" stroke="#6366f1" stroke-width="3" fill="none" marker-end="url(#arrow)" />
+  <!-- 2 -> 3 -->
+  <path d="M 420 220 L 490 220" stroke="#6366f1" stroke-width="3" fill="none" />
+  <!-- 3 -> 4 (IF) -->
+  <path d="M 650 220 L 710 220" stroke="#6366f1" stroke-width="3" fill="none" />
+  <!-- 4 (IF) -> Branch 1 (Duplicate / Slack Alert) -->
+  <path d="M 770 180 L 770 140 L 850 140" stroke="#f43f5e" stroke-width="3" stroke-dasharray="6,4" fill="none" />
+  <!-- 4 (IF) -> Branch 2 (Unique / LLM Classifier) -->
+  <path d="M 770 260 L 770 300 L 850 300" stroke="#10b981" stroke-width="3" fill="none" />
+  <!-- Branch 2 -> Writeback -->
+  <path d="M 970 360 L 970 410 L 610 410 L 610 370" stroke="#8b5cf6" stroke-width="3" fill="none" />
+
+  <!-- Node 1: Webhook Trigger -->
+  <g filter="url(#shadow)" transform="translate(50, 160)">
+    <rect width="140" height="120" rx="12" fill="#1e293b" stroke="rgba(236,72,153,0.5)" stroke-width="2" />
+    <rect width="140" height="34" rx="12" fill="url(#gradNode1)" />
+    <text x="70" y="22" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">1. Webhook</text>
+    <text x="70" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#f8fafc" text-anchor="middle">Candidate Ingest</text>
+    <text x="70" y="85" font-family="'JetBrains Mono', monospace" font-size="10" fill="#94a3b8" text-anchor="middle">POST /submission</text>
+    <text x="70" y="105" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ec4899" text-anchor="middle">Payload Ingestion</text>
+  </g>
+
+  <!-- Node 2: Data Cleaning JS -->
+  <g filter="url(#shadow)" transform="translate(260, 160)">
+    <rect width="160" height="120" rx="12" fill="#1e293b" stroke="rgba(99,102,241,0.5)" stroke-width="2" />
+    <rect width="160" height="34" rx="12" fill="url(#gradNode2)" />
+    <text x="80" y="22" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">2. Code Node (JS)</text>
+    <text x="80" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#f8fafc" text-anchor="middle">Clean &amp; Normalize</text>
+    <text x="80" y="85" font-family="'JetBrains Mono', monospace" font-size="10" fill="#94a3b8" text-anchor="middle">Phone: +91/0 → 10d</text>
+    <text x="80" y="105" font-family="'JetBrains Mono', monospace" font-size="9" fill="#818cf8" text-anchor="middle">Lowercase &amp; Skills</text>
+  </g>
+
+  <!-- Node 3: DB Duplicate Check -->
+  <g filter="url(#shadow)" transform="translate(490, 160)">
+    <rect width="160" height="120" rx="12" fill="#1e293b" stroke="rgba(6,182,212,0.5)" stroke-width="2" />
+    <rect width="160" height="34" rx="12" fill="url(#gradNode3)" />
+    <text x="80" y="22" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#fff" text-anchor="middle">3. HTTP Request</text>
+    <text x="80" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="600" fill="#f8fafc" text-anchor="middle">DB Duplicate Check</text>
+    <text x="80" y="85" font-family="'JetBrains Mono', monospace" font-size="10" fill="#94a3b8" text-anchor="middle">/check-duplicate</text>
+    <text x="80" y="105" font-family="'JetBrains Mono', monospace" font-size="9" fill="#38bdf8" text-anchor="middle">SQLite Master Query</text>
+  </g>
+
+  <!-- Node 4: IF Condition -->
+  <g filter="url(#shadow)" transform="translate(710, 175)">
+    <polygon points="60,0 120,45 60,90 0,45" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
+    <text x="60" y="42" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#f59e0b" text-anchor="middle">4. IS DUP?</text>
+    <text x="60" y="58" font-family="'JetBrains Mono', monospace" font-size="9" fill="#cbd5e1" text-anchor="middle">True / False</text>
+  </g>
+
+  <!-- Node 5: Duplicate Alert Branch -->
+  <g filter="url(#shadow)" transform="translate(850, 80)">
+    <rect width="200" height="110" rx="12" fill="#1e293b" stroke="rgba(244,63,94,0.5)" stroke-width="2" />
+    <rect width="200" height="30" rx="12" fill="#f43f5e" />
+    <text x="100" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">5A. Duplicate Alert (Slack/Webhook)</text>
+    <text x="100" y="55" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#f8fafc" text-anchor="middle">Dispatches Duplicate Alert</text>
+    <text x="100" y="75" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8" text-anchor="middle">Matched Profile ID + Sources</text>
+    <text x="100" y="93" font-family="'JetBrains Mono', monospace" font-size="9" fill="#fb7185" text-anchor="middle">Suppresses duplicate write</text>
+  </g>
+
+  <!-- Node 6: LLM Skill Classifier Branch -->
+  <g filter="url(#shadow)" transform="translate(850, 240)">
+    <rect width="200" height="120" rx="12" fill="#1e293b" stroke="rgba(16,185,129,0.5)" stroke-width="2" />
+    <rect width="200" height="30" rx="12" fill="url(#gradNode5)" />
+    <text x="100" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">5B. LLM AI Skill Classifier</text>
+    <text x="100" y="55" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#f8fafc" text-anchor="middle">Auto-Tags Category</text>
+    <text x="100" y="75" font-family="'JetBrains Mono', monospace" font-size="9" fill="#94a3b8" text-anchor="middle">"automation-heavy", "web dev"</text>
+    <text x="100" y="93" font-family="'JetBrains Mono', monospace" font-size="9" fill="#34d399" text-anchor="middle">Seniority &amp; Fit Reasoning</text>
+  </g>
+
+  <!-- Node 7: Writeback to SQLite -->
+  <g filter="url(#shadow)" transform="translate(530, 310)">
+    <rect width="160" height="90" rx="12" fill="#1e293b" stroke="rgba(139,92,246,0.5)" stroke-width="2" />
+    <rect width="160" height="28" rx="12" fill="url(#gradNode6)" />
+    <text x="80" y="19" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">6. Database Writeback</text>
+    <text x="80" y="50" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#f8fafc" text-anchor="middle">POST /api/candidates/enrich</text>
+    <text x="80" y="70" font-family="'JetBrains Mono', monospace" font-size="9" fill="#c084fc" text-anchor="middle">Persists Enriched Record</text>
+  </g>
+</svg>
