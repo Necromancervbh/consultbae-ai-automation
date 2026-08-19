@@ -309,104 +309,151 @@
         <div class="panel-header">
           <div>
             <h2>n8n Low-Code Automation Workflow (Task 2)</h2>
-            <p class="subtitle">Visual flow diagram, exportable JSON, and live interactive simulation for duplicate detection and LLM skill auto-categorization.</p>
+            <p class="subtitle">Visual workflow execution, candidate deduplication, and AI skill auto-categorization engine.</p>
           </div>
-          <div>
-            <a href="/static/n8n_flow_diagram.svg" target="_blank" class="btn btn-secondary">Open Flow Diagram</a>
+          <div class="header-actions">
+            <a href="/static/n8n_flow_diagram.svg" target="_blank" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              View SVG Flow Diagram
+            </a>
+            <button type="button" class="btn btn-secondary" id="btn-download-n8n-json">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download n8n Workflow (.json)
+            </button>
+          </div>
+        </div>
+
+        <!-- Workflow Visual Node Pipeline -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+          <div class="card-header">
+            <h3>Workflow Architecture & Pipeline Nodes</h3>
+            <span class="badge-tag">n8n Node Pipeline (v1 schema)</span>
+          </div>
+          <div class="workflow-pipeline-strip">
+            <div class="pipeline-node" id="p-node-1">
+              <div class="node-icon">⚡</div>
+              <div class="node-content">
+                <span class="node-title">1. Webhook</span>
+                <span class="node-desc">POST /webhook</span>
+              </div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-node" id="p-node-2">
+              <div class="node-icon">🧹</div>
+              <div class="node-content">
+                <span class="node-title">2. Data Clean</span>
+                <span class="node-desc">Normalize Phone/Email</span>
+              </div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-node" id="p-node-3">
+              <div class="node-icon">🔍</div>
+              <div class="node-content">
+                <span class="node-title">3. SQLite Query</span>
+                <span class="node-desc">Check Duplicates</span>
+              </div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-node" id="p-node-4">
+              <div class="node-icon">🔀</div>
+              <div class="node-content">
+                <span class="node-title">4. Router</span>
+                <span class="node-desc">Duplicate vs New</span>
+              </div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-node" id="p-node-5">
+              <div class="node-icon">🤖</div>
+              <div class="node-content">
+                <span class="node-title">5. AI Classify</span>
+                <span class="node-desc">Skill Auto-tagger</span>
+              </div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-node" id="p-node-6">
+              <div class="node-icon">💾</div>
+              <div class="node-content">
+                <span class="node-title">6. DB Writeback</span>
+                <span class="node-desc">Persist Profile</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="automation-grid">
+          <!-- Input Form Console -->
           <div class="card">
             <div class="card-header">
-              <h3>Workflow Architecture</h3>
-              <span class="badge-tag">n8n Export: n8n_candidate_enrichment_pipeline.json</span>
-            </div>
-            <div class="workflow-steps-list">
-              <div class="step-item">
-                <div class="step-num">1</div>
-                <div>
-                  <strong>Webhook Trigger</strong>
-                  <p>Listens for incoming candidate payloads (POST /webhook/candidate-submission).</p>
-                </div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">2</div>
-                <div>
-                  <strong>Data Cleaner & Normalizer (JS Code Node)</strong>
-                  <p>Standardizes phone (+91/0 -> 10 digits), lowercases email, parses skills array.</p>
-                </div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">3</div>
-                <div>
-                  <strong>Database Duplicate Query</strong>
-                  <p>Calls ConsultBae SQLite backend API (/api/candidates/check-duplicate).</p>
-                </div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">4</div>
-                <div>
-                  <strong>IF Duplicate Router</strong>
-                  <p><strong>Duplicate:</strong> Sends alert payload to Slack/Discord/Webhook.<br><strong>Unique:</strong> Passes payload to LLM Classifier.</p>
-                </div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">5</div>
-                <div>
-                  <strong>LLM AI Skill Auto-Tagger</strong>
-                  <p>Tags candidate: "automation-heavy", "web dev", "data", seniority & reasoning.</p>
-                </div>
-              </div>
-              <div class="step-item">
-                <div class="step-num">6</div>
-                <div>
-                  <strong>Database Writeback Node</strong>
-                  <p>Persists enriched profile into SQLite master table.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Interactive Test Runner Card -->
-          <div class="card">
-            <div class="card-header">
-              <h3>Live Interactive Test Console</h3>
-              <span class="hint">Test duplicate alerts & AI categorization</span>
+              <h3>Simulation Test Payload</h3>
+              <span class="hint">Select a preset or enter custom data</span>
             </div>
 
-            <form id="n8n-test-form">
+            <div class="preset-buttons-row">
+              <button type="button" class="btn btn-outline" id="btn-load-dup-sample">
+                <span class="dot dot-amber"></span> Test Duplicate (Tanvi Gupta)
+              </button>
+              <button type="button" class="btn btn-outline" id="btn-load-new-sample">
+                <span class="dot dot-emerald"></span> Test New Profile (AI Tagger)
+              </button>
+            </div>
+
+            <form id="n8n-test-form" style="margin-top: 1rem;">
               <div class="form-group">
-                <label>Candidate Name</label>
-                <input type="text" id="n8n-test-name" value="Tanvi Gupta">
+                <label for="n8n-test-name">Candidate Name</label>
+                <input type="text" id="n8n-test-name" value="Tanvi Gupta" required>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Email</label>
+                  <label for="n8n-test-email">Email Address</label>
                   <input type="email" id="n8n-test-email" value="tanvi.gupta31@example.com">
                 </div>
                 <div class="form-group">
-                  <label>Phone</label>
-                  <input type="tel" id="n8n-test-phone" value="+919000000254">
+                  <label for="n8n-test-phone">Phone (any format)</label>
+                  <input type="text" id="n8n-test-phone" value="+919000000254">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="n8n-test-city">City</label>
+                  <input type="text" id="n8n-test-city" value="Bengaluru">
+                </div>
+                <div class="form-group">
+                  <label for="n8n-test-exp">Experience (Years)</label>
+                  <input type="number" step="0.5" id="n8n-test-exp" value="4.2">
                 </div>
               </div>
               <div class="form-group">
-                <label>Skills</label>
-                <input type="text" id="n8n-test-skills" value="n8n, Python, LangChain, FastAPI, Docker">
+                <label for="n8n-test-skills">Skills (comma separated)</label>
+                <input type="text" id="n8n-test-skills" value="n8n, Python, Docker, LangChain, REST APIs">
               </div>
 
-              <div class="btn-group">
-                <button type="button" class="btn btn-secondary" id="btn-load-dup-sample">Load Existing Profile (Duplicate Test)</button>
-                <button type="button" class="btn btn-secondary" id="btn-load-new-sample">Load New Profile (Unique Test)</button>
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block" style="margin-top:1rem;">
-                Run n8n Pipeline Simulation
+              <button type="submit" class="btn btn-primary btn-block" id="btn-run-n8n-flow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Execute n8n Pipeline
               </button>
             </form>
+          </div>
 
-            <div id="n8n-output-box" class="code-output-box" style="display:none; margin-top:1rem;">
-              <pre><code id="n8n-output-json">// Result will appear here</code></pre>
+          <!-- Live Terminal Output -->
+          <div class="card terminal-card">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="tdot tdot-red"></span>
+                <span class="tdot tdot-yellow"></span>
+                <span class="tdot tdot-green"></span>
+              </div>
+              <span class="terminal-title">n8n Execution Console &bull; Live Event Log</span>
+              <button type="button" class="btn-clear-terminal" id="btn-clear-terminal" title="Clear console">Clear</button>
+            </div>
+
+            <div class="terminal-body" id="n8n-terminal-body">
+              <div class="term-line term-dim">// n8n Workflow Simulation Engine Ready.</div>
+              <div class="term-line term-dim">// Click "Execute n8n Pipeline" or select a preset above to stream execution logs.</div>
+            </div>
+
+            <div class="terminal-footer" id="terminal-footer" style="display:none;">
+              <span id="term-status-badge" class="term-badge term-badge-success">COMPLETED</span>
+              <span id="term-time-elapsed" class="term-time">Execution Time: 142ms</span>
             </div>
           </div>
         </div>

@@ -4,9 +4,26 @@ Serves Web App UI, Audio Upload & Processing Pipeline, Candidate Database, and n
 """
 
 import os
+import sys
 import uuid
+
+# Force UTF-8 output encoding on Windows so print() never crashes on emoji/Unicode
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+
+# Load .env before anything else (no-op if file doesn't exist)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env", override=False)
+except ImportError:
+    pass
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Query
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
@@ -29,6 +46,13 @@ from pipeline.db import (
 from pipeline.models import AudioSubmission, UnifiedCandidate
 from pipeline.ingest import run_ingestion_pipeline
 from .audio_analyzer import analyze_audio_file
+from automation.simulate_n8n_flow import (
+    classify_skills_ai,
+    ACTIVE_PROVIDER,
+    GROQ_API_KEY, GROQ_MODEL,
+    GEMINI_API_KEY, GEMINI_MODEL,
+    OPENAI_API_KEY, OPENAI_MODEL,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 APP_DIR = Path(__file__).resolve().parent
@@ -89,9 +113,47 @@ async def serve_index():
     return "<h1>ConsultBae AI Automation API Running. Static UI not yet mounted.</h1>"
 
 
+@app.get("/api/status")
+async def get_status():
+    """
+    Returns system status: active LLM provider, model name, and DB summary stats.
+    Used by the frontend to display the active classifier mode badge.
+    """
+    candidates = get_all_unified_candidates()
+    return {
+        "app":              "ConsultBae AI Automation Platform",
+        "version":          "1.0.0",
+        "classifier_mode":  ACTIVE_PROVIDER,
+        "groq_enabled":     bool(GROQ_API_KEY),
+        "groq_model":       GROQ_MODEL if GROQ_API_KEY else None,
+        "gemini_enabled":   bool(GEMINI_API_KEY),
+        "gemini_model":     GEMINI_MODEL if GEMINI_API_KEY else None,
+        "openai_enabled":   bool(OPENAI_API_KEY),
+        "openai_model":     OPENAI_MODEL if OPENAI_API_KEY else None,
+        "db_candidates":    len(candidates),
+        "db_path":          str(DEFAULT_DB_PATH),
+    }
+@app.get("/api/automation/workflow-json")
+async def get_workflow_json():
+    """Returns the exportable n8n workflow pipeline JSON."""
+    wf_path = BASE_DIR / "automation" / "n8n_candidate_enrichment_pipeline.json"
+    if not wf_path.exists():
+        raise HTTPException(status_code=404, detail="Workflow JSON not found.")
+    return FileResponse(
+        path=str(wf_path),
+        media_type="application/json",
+        filename="n8n_candidate_enrichment_pipeline.json"
+    )
+
+
 # --------------------------------------------------------------------------
 # AUDIO APP ENDPOINTS (TASK 3)
 # --------------------------------------------------------------------------
+
+MAX_AUDIO_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
+
+ALLOWED_AUDIO_EXTENSIONS = {".wav", ".webm", ".mp3", ".ogg", ".m4a"}
+
 
 @app.post("/api/audio/submit")
 async def submit_audio(
@@ -111,10 +173,9 @@ async def submit_audio(
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Please enter a valid 10-digit phone number.")
 
-    # Generate unique filename preserving extension
-    ext = Path(audio_file.filename or "recording.wav").suffix.lower()
-    if not ext:
-        ext = ".wav" if "wav" in (audio_file.content_type or "") else ".webm"
+    # Validate extension against allowlist
+    raw_ext = Path(audio_file.filename or "recording.wav").suffix.lower()
+    ext = raw_ext if raw_ext in ALLOWED_AUDIO_EXTENSIONS else (".wav" if "wav" in (audio_file.content_type or "") else ".webm")
 
     unique_filename = f"{uuid.uuid4().hex[:12]}_{clean_phone}{ext}"
     saved_filepath = UPLOADS_DIR / unique_filename
@@ -123,6 +184,8 @@ async def submit_audio(
     content = await audio_file.read()
     if len(content) == 0:
         raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+    if len(content) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="Audio file exceeds 50 MB maximum size limit.")
 
     with open(saved_filepath, "wb") as f:
         f.write(content)
@@ -207,7 +270,14 @@ async def list_audio_submissions():
 @app.get("/api/audio/stream/{filename}")
 async def stream_audio(filename: str):
     """Streams the audio file for in-browser playback."""
-    file_path = UPLOADS_DIR / filename
+    # Prevent path traversal attacks by resolving and verifying the path stays in UPLOADS_DIR
+    try:
+        resolved = (UPLOADS_DIR / filename).resolve()
+        resolved.relative_to(UPLOADS_DIR.resolve())  # raises ValueError if outside UPLOADS_DIR
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+
+    file_path = resolved
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Audio file not found.")
 
@@ -274,6 +344,7 @@ async def check_candidate_duplicate(req: DuplicateCheckRequest):
 async def enrich_candidate(req: CandidateEnrichRequest):
     """
     Enriches or inserts a candidate with AI-classified skills and tags (for n8n writeback).
+    Uses OpenAI GPT when OPENAI_API_KEY is set; falls back to rule-based classifier automatically.
     """
     clean_phone = normalize_phone(req.phone) if req.phone else None
     clean_email = normalize_email(req.email) if req.email else None
@@ -304,9 +375,16 @@ async def enrich_candidate(req: CandidateEnrichRequest):
             sources_merged=list(set(matched["sources_merged"] + [req.source or "n8n_automation"])),
         )
         update_unified_candidate(cand_obj)
-        return {"status": "UPDATED", "candidate": cand_obj}
+        return {"status": "UPDATED", "candidate": cand_obj, "classification": None}
     else:
-        # Create new
+        # Run AI classifier for new candidates
+        classification = classify_skills_ai({
+            "skills": skills,
+            "experience_years": req.experience_years or 0,
+        })
+        classifier_used = classification.pop("_classifier", "unknown")
+
+        # Create new candidate
         cand_obj = UnifiedCandidate(
             full_name=clean_name,
             email=clean_email,
@@ -321,7 +399,13 @@ async def enrich_candidate(req: CandidateEnrichRequest):
         )
         new_id = save_unified_candidate(cand_obj)
         cand_obj.id = new_id
-        return {"status": "CREATED", "candidate": cand_obj}
+        return {
+            "status":          "CREATED",
+            "candidate":       cand_obj,
+            "classifier_used": classifier_used,
+            "classification":  classification,
+        }
+
 
 
 @app.post("/api/pipeline/run")

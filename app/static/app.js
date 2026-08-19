@@ -71,11 +71,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const n8nTestName = document.getElementById('n8n-test-name');
   const n8nTestEmail = document.getElementById('n8n-test-email');
   const n8nTestPhone = document.getElementById('n8n-test-phone');
+  const n8nTestCity = document.getElementById('n8n-test-city');
+  const n8nTestExp = document.getElementById('n8n-test-exp');
   const n8nTestSkills = document.getElementById('n8n-test-skills');
   const btnLoadDupSample = document.getElementById('btn-load-dup-sample');
   const btnLoadNewSample = document.getElementById('btn-load-new-sample');
-  const n8nOutputBox = document.getElementById('n8n-output-box');
-  const n8nOutputJson = document.getElementById('n8n-output-json');
+  const btnRunN8nFlow = document.getElementById('btn-run-n8n-flow');
+  const btnDownloadN8nJson = document.getElementById('btn-download-n8n-json');
+  const btnClearTerminal = document.getElementById('btn-clear-terminal');
+  const n8nTerminalBody = document.getElementById('n8n-terminal-body');
+  const terminalFooter = document.getElementById('terminal-footer');
+  const termStatusBadge = document.getElementById('term-status-badge');
+  const termTimeElapsed = document.getElementById('term-time-elapsed');
 
   // -------------------------------------------------------------
   // 1. NAVIGATION TAB SWITCHING
@@ -560,57 +567,175 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------
-  // 8. N8N AUTOMATION INTERACTIVE TEST RUNNER (TASK 2)
+  // 8. N8N AUTOMATION INTERACTIVE TERMINAL EMULATOR (TASK 2)
   // -------------------------------------------------------------
+  function logToTerminal(text, className = '') {
+    if (!n8nTerminalBody) return;
+    const line = document.createElement('div');
+    line.className = 'term-line ' + className;
+    line.textContent = text;
+    n8nTerminalBody.appendChild(line);
+    n8nTerminalBody.scrollTop = n8nTerminalBody.scrollHeight;
+  }
+
+  function logBlockToTerminal(obj) {
+    if (!n8nTerminalBody) return;
+    const block = document.createElement('pre');
+    block.className = 'term-block';
+    block.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+    n8nTerminalBody.appendChild(block);
+    n8nTerminalBody.scrollTop = n8nTerminalBody.scrollHeight;
+  }
+
+  function highlightPipelineNode(nodeNum, state = 'active') {
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById(`p-node-${i}`);
+      if (el) {
+        if (i === nodeNum) {
+          el.className = `pipeline-node node-${state}`;
+        } else if (i < nodeNum) {
+          el.className = 'pipeline-node node-success';
+        } else {
+          el.className = 'pipeline-node';
+        }
+      }
+    }
+  }
+
+  function resetPipelineNodes() {
+    for (let i = 1; i <= 6; i++) {
+      const el = document.getElementById(`p-node-${i}`);
+      if (el) el.className = 'pipeline-node';
+    }
+  }
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  if (btnClearTerminal) {
+    btnClearTerminal.addEventListener('click', () => {
+      if (n8nTerminalBody) {
+        n8nTerminalBody.innerHTML = `
+          <div class="term-line term-dim">// n8n Workflow Simulation Engine Ready.</div>
+          <div class="term-line term-dim">// Click "Execute n8n Pipeline" or select a preset to stream execution logs.</div>
+        `;
+      }
+      if (terminalFooter) terminalFooter.style.display = 'none';
+      resetPipelineNodes();
+    });
+  }
+
+  if (btnDownloadN8nJson) {
+    btnDownloadN8nJson.addEventListener('click', () => {
+      window.location.href = '/api/automation/workflow-json';
+    });
+  }
+
   if (btnLoadDupSample) {
-    btnLoadDupSample.addEventListener('click', () => {
+    btnLoadDupSample.addEventListener('click', (e) => {
+      e.preventDefault();
       n8nTestName.value = 'Tanvi Gupta';
       n8nTestEmail.value = 'tanvi.gupta31@example.com';
       n8nTestPhone.value = '+919000000254';
+      if (n8nTestCity) n8nTestCity.value = 'Bengaluru';
+      if (n8nTestExp) n8nTestExp.value = '4.2';
       n8nTestSkills.value = 'n8n, Python, Docker';
+      logToTerminal('[Preset Loaded] Tanvi Gupta (Known candidate from Source 1, 2, 3 - will test duplicate alert path).', 'term-amber');
     });
   }
 
   if (btnLoadNewSample) {
-    btnLoadNewSample.addEventListener('click', () => {
+    btnLoadNewSample.addEventListener('click', (e) => {
+      e.preventDefault();
+      const randomId = Math.floor(1000 + Math.random() * 9000);
       n8nTestName.value = 'Harsh Vardhan';
-      n8nTestEmail.value = 'harsh.vardhan@ai-consultbae.io';
-      n8nTestPhone.value = '+91-9876543210';
+      n8nTestEmail.value = `harsh.vardhan.${randomId}@ai-consultbae.io`;
+      n8nTestPhone.value = `+91-98765${randomId}`;
+      if (n8nTestCity) n8nTestCity.value = 'Bengaluru';
+      if (n8nTestExp) n8nTestExp.value = '4.5';
       n8nTestSkills.value = 'n8n, LangChain, Zapier, Python, FastAPI, Web Scraping';
+      logToTerminal(`[Preset Loaded] Harsh Vardhan (Unique applicant email/phone - will test AI classification path).`, 'term-cyan');
     });
   }
 
   if (n8nTestForm) {
     n8nTestForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      n8nOutputBox.style.display = 'block';
-      n8nOutputJson.textContent = 'Executing n8n pipeline nodes (Clean -> Check Duplicate -> LLM Classify -> Writeback)...';
 
+      if (btnRunN8nFlow) {
+        btnRunN8nFlow.disabled = true;
+        btnRunN8nFlow.textContent = 'Running Workflow...';
+      }
+
+      if (n8nTerminalBody) n8nTerminalBody.innerHTML = '';
+      if (terminalFooter) terminalFooter.style.display = 'none';
+
+      const startTime = Date.now();
+      const timestamp = () => new Date().toISOString().substring(11, 19);
+
+      const name = n8nTestName.value.trim();
       const email = n8nTestEmail.value.trim();
       const phone = n8nTestPhone.value.trim();
-      const name = n8nTestName.value.trim();
+      const city = n8nTestCity ? n8nTestCity.value.trim() : 'Unknown';
+      const exp = n8nTestExp ? parseFloat(n8nTestExp.value) || 2.5 : 2.5;
       const skills = n8nTestSkills.value.split(',').map(s => s.trim()).filter(Boolean);
 
       try {
-        // Step 1: Duplicate check
+        // Step 1: Webhook Ingest
+        highlightPipelineNode(1, 'active');
+        logToTerminal(`[${timestamp()}] [Step 1: Webhook Ingest Node] Webhook trigger fired (POST /webhook/candidate-submission)`, 'term-cyan');
+        logBlockToTerminal({ name, email, phone, city, experience_years: exp, skills });
+        await delay(350);
+
+        // Step 2: Data Cleaning & Normalization
+        highlightPipelineNode(2, 'active');
+        logToTerminal(`[${timestamp()}] [Step 2: Code Node / Normalizer] Standardizing phone, lowercase email, canonical skills...`, 'term-purple');
+        await delay(350);
+
+        // Step 3: Database Query (Duplicate Check)
+        highlightPipelineNode(3, 'active');
+        logToTerminal(`[${timestamp()}] [Step 3: SQLite Query Node] Checking database for matching phone or email...`, 'term-cyan');
+
         const dupRes = await fetch('/api/candidates/check-duplicate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, phone, name })
         });
         const dupData = await dupRes.json();
+        await delay(400);
 
         if (dupData.is_duplicate) {
+          // Branch A: Duplicate detected
+          highlightPipelineNode(4, 'warning');
+          logToTerminal(`[${timestamp()}] [Step 4: Router Node] ⛔ DUPLICATE DETECTED! Matched candidate ID #${dupData.matched_candidate.id} (${dupData.matched_candidate.full_name})`, 'term-rose');
+          await delay(300);
+
+          logToTerminal(`[${timestamp()}] [Step 4a: Slack / Discord Alert Node] Dispatched duplicate notification:`, 'term-amber');
           const alertPayload = {
-            execution_status: 'DUPLICATE_TRIGGERED',
-            n8n_node_fired: 'Send Duplicate Alert (Slack/Webhook)',
-            alert_message: `Duplicate profile detected matching ID #${dupData.matched_candidate.id}`,
-            matched_candidate: dupData.matched_candidate,
-            action_taken: 'Alert sent to recruitment channel. Duplicate entry suppressed.'
+            alert_type: 'DUPLICATE_CANDIDATE_DETECTED',
+            candidate_name: name,
+            email: email,
+            phone: phone,
+            matched_candidate_id: dupData.matched_candidate.id,
+            matched_sources: dupData.matched_candidate.sources_merged,
+            action_taken: 'Notification sent to Slack #recruitment-alerts; duplicate insertion suppressed.'
           };
-          n8nOutputJson.textContent = JSON.stringify(alertPayload, null, 2);
+          logBlockToTerminal(alertPayload);
+
+          if (terminalFooter) {
+            terminalFooter.style.display = 'flex';
+            termStatusBadge.className = 'term-badge term-badge-warning';
+            termStatusBadge.textContent = 'DUPLICATE SUPPRESSED';
+            termTimeElapsed.textContent = `Execution Time: ${Date.now() - startTime}ms`;
+          }
         } else {
-          // Step 2: Auto-enrich
+          // Branch B: Unique Candidate -> AI Classification & Writeback
+          highlightPipelineNode(4, 'success');
+          logToTerminal(`[${timestamp()}] [Step 4: Router Node] ✅ Candidate is unique. Routing to AI Enrichment...`, 'term-emerald');
+          await delay(300);
+
+          highlightPipelineNode(5, 'active');
+          logToTerminal(`[${timestamp()}] [Step 5: AI / LLM Skill Auto-Tagger Node] Calling AI classifier...`, 'term-purple');
+
           const enrichRes = await fetch('/api/candidates/enrich', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -618,24 +743,53 @@ document.addEventListener('DOMContentLoaded', () => {
               full_name: name,
               email: email,
               phone: phone,
+              city: city,
               skills: skills,
-              experience_years: 3.5,
-              primary_category: skills.some(s => s.toLowerCase().includes('n8n') || s.toLowerCase().includes('zapier')) ? 'automation-heavy' : 'web dev',
-              seniority_level: 'Mid-Senior Level',
-              ai_notes: 'Classified via n8n LLM Auto-tagger step.'
+              experience_years: exp,
+              source: 'n8n_interactive_console'
             })
           });
           const enrichData = await enrichRes.json();
-          const successPayload = {
-            execution_status: 'NEW_CANDIDATE_CLASSIFIED_AND_SAVED',
-            n8n_nodes_fired: ['Data Normalizer', 'LLM AI Classifier', 'Database Writeback'],
-            enriched_candidate: enrichData.candidate
-          };
-          n8nOutputJson.textContent = JSON.stringify(successPayload, null, 2);
+          await delay(400);
+
+          const classification = enrichData.classification || {};
+          const classifierUsed = enrichData.classifier_used || 'rule-based';
+          logToTerminal(`[${timestamp()}] [Step 5: AI Classification Result] [${classifierUsed}]`, 'term-emerald');
+          logToTerminal(`   • Primary Category : ${classification.primary_category || 'automation-heavy'}`);
+          logToTerminal(`   • Seniority Level  : ${classification.seniority_level || 'Senior'}`);
+          logToTerminal(`   • Secondary Tags   : ${(classification.secondary_tags || []).join(', ')}`);
+          logToTerminal(`   • Reasoning        : ${classification.reasoning || 'Automated skill categorization'}`);
+          await delay(300);
+
+          highlightPipelineNode(6, 'success');
+          logToTerminal(`[${timestamp()}] [Step 6: SQLite Writeback Node] Successfully inserted Master Profile ID #${enrichData.candidate.id}!`, 'term-emerald');
+          logBlockToTerminal({
+            status: 'ENRICHED_AND_SAVED',
+            candidate_id: enrichData.candidate.id,
+            candidate_name: enrichData.candidate.full_name,
+            sources_merged: enrichData.candidate.sources_merged,
+            skills: enrichData.candidate.skills
+          });
+
+          if (terminalFooter) {
+            terminalFooter.style.display = 'flex';
+            termStatusBadge.className = 'term-badge term-badge-success';
+            termStatusBadge.textContent = 'PROFILE ENRICHED & SAVED';
+            termTimeElapsed.textContent = `Execution Time: ${Date.now() - startTime}ms`;
+          }
+
           loadCandidates();
         }
       } catch (err) {
-        n8nOutputJson.textContent = 'Simulation Error: ' + err.message;
+        logToTerminal(`[ERROR] Simulation failure: ${err.message}`, 'term-rose');
+      } finally {
+        if (btnRunN8nFlow) {
+          btnRunN8nFlow.disabled = false;
+          btnRunN8nFlow.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Execute n8n Pipeline
+          `;
+        }
       }
     });
   }
@@ -644,3 +798,4 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSubmissions();
   loadCandidates();
 });
+

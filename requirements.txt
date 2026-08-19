@@ -1,0 +1,28 @@
+# ConsultBae AI Automation Platform - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Web framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+
+# Request parsing and validation
+pydantic>=2.0.0
+python-multipart>=0.0.9
+
+# Data processing
+numpy>=1.24.0
+
+# Environment variable management (.env file support)
+python-dotenv>=1.0.0
+
+# Optional: LLM integration for AI skill classification
+# Provider priority: Groq (free) -> OpenAI (paid) -> rule-based fallback
+groq>=0.9.0           # FREE — get key at console.groq.com (no credit card)
+openai>=1.0.0         # Paid  — get key at platform.openai.com
+
+# Optional: enhanced audio format support (OGG, FLAC, MP3)
+# soundfile>=0.12.0     # requires libsndfile system library
+# mutagen>=1.47.0       # pure-python audio metadata parser (no binary deps)
+
+# Development / testing utilities
+requests>=2.31.0        # used in integration tests and API health checks
