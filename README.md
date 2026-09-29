@@ -1,5 +1,6 @@
 # ConsultBae — AI Automation Engineering Platform
 
+[![CI](https://github.com/Necromancervbh/consultbae-ai-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/Necromancervbh/consultbae-ai-automation/actions/workflows/ci.yml)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20%2F%20Python%203.11-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57.svg?style=flat&logo=sqlite)](https://sqlite.org)
 [![n8n](https://img.shields.io/badge/Automation-n8n%20Workflow-EA4B71.svg?style=flat&logo=n8n)](https://n8n.io)
